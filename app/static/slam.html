@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070b12" />
+    <title>C270 Map Lab — Monocular visual SLAM</title>
+    <link rel="stylesheet" href="/static/slam.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <p class="eyebrow">LOCAL MONOCULAR SLAM</p>
+          <h1>C270 Map Lab</h1>
+        </div>
+        <div class="header-right">
+          <span id="baBadge" class="badge subtle" title="Local bundle adjustment refines keyframes and points in the background"><i></i><span>Bundle adjustment</span></span>
+          <div id="connectionBadge" class="badge"><i></i><span>Offline</span></div>
+        </div>
+      </header>
+
+      <section class="layout">
+        <aside class="controls card">
+          <div class="section-title"><span>01</span><div><b>Camera</b><small>Choose the Logitech C270</small></div></div>
+          <label for="cameraSelect">Video source</label>
+          <select id="cameraSelect">
+            <option value="native:0">Direct USB webcam 0</option>
+            <option value="native:1">Direct USB webcam 1</option>
+            <option value="native:synthetic">Simulated room (no camera)</option>
+            <option value="">Browser camera</option>
+          </select>
+          <p id="cameraHint" class="hint">Direct mode lets Python read the webcam; no browser permission needed.</p>
+          <div class="button-row">
+            <button id="startButton" class="button primary" type="button">Start mapping</button>
+            <button id="resetButton" class="button ghost" type="button" disabled>Reset</button>
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-title"><span>02</span><div><b>Calibration</b><small>Optional, but strongly recommended</small></div></div>
+          <label class="file-button" for="calibrationFile">Load calibration JSON</label>
+          <input id="calibrationFile" type="file" accept="application/json,.json" hidden />
+          <p id="calibrationLabel" class="hint">Using the approximate C270 model (fx ≈ 790 px at 640 × 480).</p>
+
+          <div class="divider"></div>
+          <div class="section-title"><span>03</span><div><b>Map output</b><small>Saved locally by the Python server</small></div></div>
+          <button id="exportButton" class="button secondary" type="button" disabled>Download point cloud (.ply)</button>
+          <button id="trajectoryButton" class="button ghost full" type="button" disabled>Download trajectory (.csv)</button>
+          <button id="costmapButton" class="button ghost full" type="button" disabled>Download costmap (.png)</button>
+          <p class="hint">Exports are also written to <code>slam_output/</code>.</p>
+
+          <div class="notice">
+            <b>How to build a good map</b>
+            <p>Start on a textured scene and <strong>slide the camera sideways</strong> 10–20 cm to initialize. Move slowly; pure rotation cannot add new points. Distances are in arbitrary units (one camera cannot recover real scale).</p>
+          </div>
+        </aside>
+
+        <section class="viewer card">
+          <div class="viewer-toolbar">
+            <div><p class="eyebrow">LIVE 3D MAP · ORB-SLAM3 VIEW</p><h2 id="statusText">Ready to map</h2></div>
+            <div class="toolbar-right">
+              <div class="segmented" id="themeToggle" role="group" aria-label="Viewer background">
+                <button type="button" data-theme="light" class="on">Light</button><button type="button" data-theme="dark">Dark</button>
+              </div>
+              <button id="fitButton" class="mini-button" type="button">Fit view</button>
+            </div>
+          </div>
+          <div id="mapFrame" class="map-frame light">
+            <canvas id="mapCanvas"></canvas>
+            <div class="pangolin-menu" id="viewerMenu">
+              <label><input type="checkbox" data-opt="follow" checked /> Follow Camera</label>
+              <label><input type="checkbox" data-opt="points" checked /> Show Points</label>
+              <label><input type="checkbox" data-opt="keyframes" checked /> Show KeyFrames</label>
+              <label><input type="checkbox" data-opt="graph" checked /> Show Graph</label>
+              <label><input type="checkbox" data-opt="trajectory" /> Show Trajectory</label>
+              <label><input type="checkbox" data-opt="surfaces" checked /> Show Surfaces</label>
+              <label><input type="checkbox" data-opt="grid" checked /> Ground Grid</label>
+              <div class="menu-buttons"><button type="button" id="topViewButton">Top View</button><button type="button" id="sideViewButton">Follow View</button></div>
+            </div>
+            <div id="mapEmpty" class="map-empty"><div class="orb"><i></i><i></i><i></i></div><p>Slide sideways, then move slowly to build the map</p></div>
+            <div class="legend3d"><span class="k kf"></span>Keyframes <span class="k cur"></span>Camera <span class="k mp"></span>Map points <span class="k loc"></span>Tracked</div>
+            <div class="viewer-help">Drag to orbit · right-drag to pan · wheel to zoom · double-click to fit</div>
+          </div>
+          <div class="metrics">
+            <div><small>MAP POINTS</small><strong id="landmarks">0</strong></div>
+            <div><small>KEYFRAMES</small><strong id="keyframes">0</strong></div>
+            <div><small>MATCHES</small><strong id="matches">0</strong></div>
+            <div><small>POSE INLIERS</small><strong id="inliers">0</strong></div>
+            <div><small>SLAM</small><strong id="procMs">0 ms</strong></div>
+            <div><small>FRAMES</small><strong id="frames">0</strong></div>
+          </div>
+        </section>
+
+        <div class="side-column">
+          <section class="camera card">
+            <div class="camera-heading"><div><p class="eyebrow">CAMERA INPUT</p><h2 id="cameraName">Logitech C270</h2></div></div>
+            <div class="segmented wide" id="viewToggle" role="group" aria-label="Camera view">
+              <button type="button" data-view="features" class="on">Features</button><button type="button" data-view="ar">AR overlay</button><button type="button" data-view="raw">Raw feed</button>
+            </div>
+            <div class="video-wrap"><video id="video" playsinline muted></video><canvas id="liveCanvas" width="640" height="480" hidden></canvas><div id="videoEmpty">Camera off</div></div>
+            <div class="live-stats"><span id="videoFps">video — fps</span><span id="slamFps">SLAM — fps</span><span id="latency">—</span></div>
+          </section>
+
+          <section class="costmap card">
+            <div class="camera-heading"><div><p class="eyebrow">2D COSTMAP · NAV2 STYLE</p><h2>Occupancy &amp; planning</h2></div><span id="costmapInfo">—</span></div>
+            <div class="costmap-wrap"><canvas id="costmapCanvas"></canvas><div id="costmapEmpty">The costmap appears after a few keyframes</div></div>
+            <div class="costmap-legend"><span><i class="c-free"></i>Free</span><span><i class="c-unknown"></i>Unknown</span><span><i class="c-lethal"></i>Obstacle</span><span><i class="c-infl"></i>Inflation</span><span><i class="c-path"></i>Plan</span></div>
+            <div class="costmap-actions"><span id="goalInfo" class="hint">Click the map to set a goal. A* plans around the inflated obstacles.</span><button id="clearGoalButton" class="mini-button" type="button" disabled>Clear goal</button></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <canvas id="captureCanvas" width="640" height="480" hidden></canvas>
+    <script src="/static/slam.js" defer></script>
+  </body>
+</html>

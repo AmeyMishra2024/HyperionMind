@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#081013" />
+    <title>HyperionMind — Social vision assistant</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="HyperionMind home"><span class="brand-mark"><i></i><i></i><i></i></span><span>HyperionMind</span></a>
+        <div class="topbar-actions"><a class="slam-link" href="/slam">C270 SLAM</a><div id="connectionBadge" class="badge"><span></span> Offline</div></div>
+      </header>
+      <section id="setupPanel" class="setup card">
+        <div><p class="eyebrow">SOCIAL VISION ASSISTANT</p><h1>A room-aware voice that remembers each conversation.</h1><p class="lead">Connect your camera and microphone. Raise a hand to begin talking.</p></div>
+        <form id="keyForm" class="key-form">
+          <label for="apiKey">OpenAI API key</label>
+          <div class="key-row"><input id="apiKey" type="password" autocomplete="off" placeholder="sk-…" required minlength="20" /><button id="connectButton" class="button primary" type="submit">Connect</button></div>
+          <p id="keyHelp" class="microcopy">Used only in server memory for this session. It is never saved by this app.</p>
+          <div class="demo-divider"><span>or</span></div>
+          <button id="demoButton" class="button demo-button" type="button">Try demo without an API key</button>
+          <p class="microcopy">Demo mode uses local scripted replies and your browser's speech features.</p>
+        </form>
+      </section>
+      <section id="workspace" class="workspace hidden">
+        <div class="stage card">
+          <div class="stage-toolbar"><div><p class="eyebrow">LIVE CAMERA</p><h2 id="visionStatus">Ready to start</h2></div><div class="toolbar-actions"><button id="muteButton" class="icon-button" type="button">Mic on</button><button id="cameraButton" class="button primary" type="button">Start camera</button></div></div>
+          <div class="video-frame"><video id="video" playsinline muted></video><canvas id="overlay"></canvas><div id="videoPlaceholder" class="video-placeholder"><div class="radar"><span></span></div><p>Camera is off</p></div><div class="count-card"><strong id="personCount">0</strong><span>people detected</span></div><div id="listeningPill" class="listening-pill hidden"><span></span> Listening to <b></b></div></div>
+          <p id="privacyNote" class="privacy-note">Video frames are processed for detection and are not stored.</p>
+        </div>
+        <aside class="conversation card">
+          <div class="conversation-header"><div><p class="eyebrow">CONVERSATION</p><h2 id="speakerName">Waiting for a hand</h2></div><button id="forgetButton" class="text-button" type="button" disabled>Forget</button></div>
+          <div id="transcript" class="transcript" aria-live="polite"><div class="empty-state"><span>✦</span><p>When someone raises a hand, their private conversation appears here.</p></div></div>
+          <form id="textForm" class="text-form"><input id="textInput" type="text" placeholder="Type a message for the active person…" disabled /><button type="submit" aria-label="Send message" disabled>↑</button></form>
+          <div class="status-strip"><span id="activityDot" class="activity-dot"></span><span id="activityText">Idle</span></div>
+        </aside>
+      </section>
+    </main>
+    <canvas id="captureCanvas" width="640" height="360" hidden></canvas>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
